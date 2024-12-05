@@ -4,6 +4,19 @@ import random
 DIRECTIONS = [(-1, 0), (0, -1), (1, 0), (0, 1)]
 WALL_CHECK_MASKS = [0b0001, 0b0010, 0b0100, 0b1000]
 WALL_BREAK_MASKS = [0b1110, 0b1101, 0b1011, 0b0111]
+def declare_wall_design() -> None:
+    USER_READABLE_WALLS = []
+    WALLS = [[
+        [],[],[]
+        
+    ]
+        
+    ]
+
+    for i in range(16):
+        
+
+    
 
 def step_to_square_mask(earlier_direction: tuple, later_direction: tuple) -> tuple:
     return 0b1111 & WALL_BREAK_MASKS[DIRECTIONS.index(earlier_direction)] & WALL_BREAK_MASKS[DIRECTIONS.index(later_direction)]
@@ -54,17 +67,24 @@ def new_maze(szelesseg: int, magassag: int) -> list:
             steps = next_step(steps, szelesseg -1, magassag - 1)
 #            print("something happened")
         raster_maze[steps[-1][0]][steps[-1][1]] &=  WALL_BREAK_MASKS[DIRECTIONS.index(position_delta(steps[-2], steps[-1])) - 2]
+        # if len(steps) > 2:
+            # raster_maze[steps[-2][0]][steps[-2][1]] &= WALL_BREAK_MASKS[DIRECTIONS.indexk]
+
         
-        while len(steps) != 2:
+        print("Some shit")
+        while len(steps) > 1:
             print(raster_maze)
             maze.add(steps[0])
             raster_maze[steps[-1][0]][steps[-1][1]] &= WALL_BREAK_MASKS[DIRECTIONS.index(position_delta(steps[0], steps[1]))]
-            if len(steps) != 3:
-                del steps[0]
+            del steps[0]
+        del steps[0]
         
         
+
     return raster_maze
 
 
 for i in new_maze(10, 10):
-    print(" ".join(map(lambda x: str(x), i)))
+    print(" ".join(map(str, i)))
+
+
