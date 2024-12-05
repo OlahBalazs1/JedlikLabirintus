@@ -4,41 +4,41 @@ import random
 DIRECTIONS = [(-1, 0), (0, -1), (1, 0), (0, 1)]
 WALL_CHECK_MASKS = [0b0001, 0b0010, 0b0100, 0b1000]
 WALL_BREAK_MASKS = [0b1110, 0b1101, 0b1011, 0b0111]
-def declare_wall_design() -> None:
-    USER_READABLE_WALLS = []
-    WALLS = [[
-        [],[],[]
-        
-    ]
-        
-    ]
+def create_wall(cell: int) -> list: 
+    wall = [[" " for _ in range(3)] for _ in range(3)]
+    wall[0][0] = wall[0][2] = wall[2][0] = wall[2][2] = "#"
+    for index, mask in enumerate(WALL_CHECK_MASKS):
+        if cell & mask != 0:
+            match index:
+                case 0: 
+                    wall[1][0] = "#"
+                case 1:
+                    wall[0][1] = "#"
+                case 2:
+                    wall[1][2] = "#"
+                case 3:
+                    wall[2][1] = "#"
+    return wall
 
-    for i in range(16):
-        
 
-    
 
-def step_to_square_mask(earlier_direction: tuple, later_direction: tuple) -> tuple:
-    return 0b1111 & WALL_BREAK_MASKS[DIRECTIONS.index(earlier_direction)] & WALL_BREAK_MASKS[DIRECTIONS.index(later_direction)]
-    
-
-def add_vector_to_position(position, vector) -> list:
+def add_offset(position, vector) -> tuple:
     return position[0] + vector[0], position[1] + vector[1]
 
-def position_delta(earlier_position, later_position) -> tuple:
-    return later_position[0] - earlier_position[0], later_position[1] - earlier_position[1]
-
-def next_step(previous_steps: list, max_x: int, max_y: int) -> tuple:
-    next = add_vector_to_position(previous_steps[-1], random.choice(DIRECTIONS))
-    while next == previous_steps[-1] or next[0] not in range(0, max_x + 1) or next[1] not in range(0, max_y + 1):
-#        print("Anyád")
-        next = add_vector_to_position(previous_steps[-1], random.choice(DIRECTIONS))
-    while next in previous_steps:
-        del previous_steps[-1]
-
-    previous_steps.append(next)
+def new_loop(start_pos: tuple, active_positions: set, max_x: int, max_y: int) -> list:
+    path_raster = [[(0, 0) for _ in range(max_y + 1)] for _ in range(max_x + 1)]
+    next_dir = random.choice(DIRECTIONS)
+    dir_to_previous = DIRECTIONS[DIRECTIONS.index(next_dir) - 2]
+    head = start_pos
+    while head not in active_positions:
+        dir_to_previous = DIRECTIONS[DIRECTIONS.index(next_dir) - 2]
+        while next_dir == dir_to_previous or (add_offset(head, next_dir)[0] not in range(0, max_x + 1)) or (add_offset(head, next_dir)[1] not in range(0, max_y + 1)):
+            next_dir = random.choice(DIRECTIONS)
+        path_raster[head[0]][head[1]] = next_dir
+        head = add_offset(head, next_dir)
+    print("a")
     
-    return previous_steps
+    return path_raster
 
 def random_inactive_position(max_x: int, max_y: int, active_positions: set) -> tuple:
     rand_x = -1
@@ -53,38 +53,53 @@ def random_inactive_position(max_x: int, max_y: int, active_positions: set) -> t
 # https://weblog.jamisbuck.org/2011/1/20/maze-generation-wilson-s-algorithm
 # https://en.wikipedia.org/wiki/Maze_generation_algorithm#Wilson's_algorithm
 def new_maze(szelesseg: int, magassag: int) -> list:
-    maze = {random_inactive_position(szelesseg -1, magassag -1, set())}
-    raster_maze = [[0b1111 for _ in range(szelesseg)] for _ in range(magassag)]
+    active_cells = {random_inactive_position(szelesseg -1, magassag -1, set())}
+    raster_maze = [[0b1111 for _ in range(magassag)] for _ in range(szelesseg)]
 
-    while len(maze) < szelesseg * magassag:
-        start_pos = random_inactive_position(szelesseg -1, magassag -1, maze)
-        steps = []
-        steps.append(start_pos)
-        steps.append(add_vector_to_position(start_pos, random.choice(DIRECTIONS)))
-#        print(raster_maze)
-        while steps[-1] not in maze:
-#            print(steps)
-            steps = next_step(steps, szelesseg -1, magassag - 1)
-#            print("something happened")
-        raster_maze[steps[-1][0]][steps[-1][1]] &=  WALL_BREAK_MASKS[DIRECTIONS.index(position_delta(steps[-2], steps[-1])) - 2]
-        # if len(steps) > 2:
-            # raster_maze[steps[-2][0]][steps[-2][1]] &= WALL_BREAK_MASKS[DIRECTIONS.indexk]
-
-        
-        print("Some shit")
-        while len(steps) > 1:
-            print(raster_maze)
-            maze.add(steps[0])
-            raster_maze[steps[-1][0]][steps[-1][1]] &= WALL_BREAK_MASKS[DIRECTIONS.index(position_delta(steps[0], steps[1]))]
-            del steps[0]
-        del steps[0]
-        
-        
+    while len(active_cells) < szelesseg * magassag:
+        start_pos = random_inactive_position(szelesseg - 1, magassag -1, active_cells)
+        path_raster = new_loop(start_pos, active_cells, szelesseg -1, magassag -1, )
+        last_dir = (0,0)
+        head_dir = (-1, -1)
+        head = start_pos
+        while head_dir != (0,0):
+            head_dir = path_raster[head[0]][head[1]]
+            active_cells.add(head)
+            try:
+                raster_maze[head[0]][head[1]] &= WALL_BREAK_MASKS[DIRECTIONS.index(last_dir) - 2]
+                raster_maze[head[0]][head[1]] &= WALL_BREAK_MASKS[DIRECTIONS.index(head_dir)]
+            except:
+                pass
+            head = add_offset(head, head_dir)
+            last_dir = head_dir
+        try:
+            raster_maze[head[0]][head[1]] &= WALL_BREAK_MASKS[DIRECTIONS.index(last_dir) - 2]
+        except:
+            pass
 
     return raster_maze
 
 
-for i in new_maze(10, 10):
-    print(" ".join(map(str, i)))
+def draw_maze(maze: list) -> None:
+    for y in maze:
+        line = ["", "", ""]
+        # print(y)
+        for x in y: 
+            # print(x)
+            for wall in create_wall(x):
+                for index, cell in enumerate(wall):
+                    # print(cell)
+                    line[index] += cell
+        for i in line:
+            # print(i)
+            print()
+            print("".join(i), end="")
+    print()
+
+
+draw_maze(new_maze(10, 10))
+
+# for i in create_wall(0b1111):
+#     print(i)
 
 
