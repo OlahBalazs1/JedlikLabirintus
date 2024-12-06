@@ -52,7 +52,7 @@ def new_maze(width: int, height: int) -> list:
 
     ABo_head = list(active_cells)[0]
 
-    while len(active_cells) < (width * height) * 0.34:
+    while len(active_cells) < int((width * height) * 0.44 - 0.5):
         next_dir = random_direction_in_bounds(ABo_head, width -1, height -1)
         if add_offset(ABo_head, next_dir) in active_cells:
             ABo_head = add_offset(ABo_head, next_dir)
@@ -61,7 +61,6 @@ def new_maze(width: int, height: int) -> list:
             ABo_head = add_offset(ABo_head, next_dir)
             raster_maze[ABo_head[0]][ABo_head[1]] &= WALL_BREAK_MASKS[DIRECTIONS.index((next_dir)) - 2]
         active_cells.add(ABo_head)
-
 
     while len(active_cells) < width * height:
         start_pos = random_inactive_position(width - 1, height -1, active_cells)
