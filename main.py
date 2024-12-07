@@ -73,4 +73,4 @@ def draw_maze(maze: list) -> None:
     for i in maze_lines:
         print(num_list_to_wall_str(i))
 
-draw_maze(new_maze(21, 21))
+draw_maze(new_maze(10, 10))

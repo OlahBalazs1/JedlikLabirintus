@@ -24,24 +24,16 @@ def new_loop(start_pos: tuple, active_positions: set, max_x: int, max_y: int) ->
     while head not in active_positions:
         neighbors = []
         count += 1
-        # if count >= 1000:
-        #     print(head)
-        #     print(active_positions)
         dir_to_previous = DIRECTIONS[DIRECTIONS.index(next_dir) - 2]
         for i in DIRECTIONS:
             if i != dir_to_previous and add_offset(head, i)[0] in range(1, max_x + 1) and add_offset(head, i)[1] in range(0, max_y + 1):
                 neighbors.append(i)
-        # print(head)
-        # print(neighbors)
         next_dir = random.choice(neighbors)
 
-        # while add_offset(head, next_dir)[0] not in range(0, max_x + 1) or add_offset(head, next_dir)[1] not in range(0, max_y + 1):
-        #     next_dir = DIRECTIONS[random.randint(0, 3)]
         path_raster[head[0]][head[1]] = next_dir
         if add_offset(head, next_dir) in active_positions:
             return path_raster
         head = add_offset(head, next_dir)
-    # print("a")
     
     return path_raster
 
@@ -60,7 +52,7 @@ def random_inactive_position(max_x: int, max_y: int, active_positions: set) -> t
 # https://weblog.jamisbuck.org/2011/1/17/maze-generation-aldous-broder-algorithm
 # https://en.wikipedia.org/wiki/Maze_generation_algorithm
 def new_maze(width: int, height: int) -> list:
-    active_cells = {(int(width / 2), int(height / 2))}
+    active_cells = {(random.randint(0, width - 1), random.randint(0, height - 1))}
     raster_maze = [[0b1111 for _ in range(height)] for _ in range(width)]
 
     ABo_head = list(active_cells)[0]
