@@ -61,11 +61,13 @@ def draw_maze(maze: list) -> None:
         for index in reversed(range(len(maze_lines))):
             maze_lines[index][column + 1] |= maze_lines[index][column]
             maze_lines[index][column] = maze_lines[index][column - 1] 
+            maze_lines[index].insert(column, maze_lines[index][column])
 
     # fix last column
     for line in range(len(maze_lines)):
         maze_lines[line].append(maze_lines[line][-1])
         maze_lines[line][-2] = maze_lines[line][-3]
+        maze_lines[line].insert(-1, maze_lines[line][-2])
     
 
     for i in maze_lines:

@@ -19,14 +19,27 @@ def new_loop(start_pos: tuple, active_positions: set, max_x: int, max_y: int) ->
     head = start_pos
     next_dir = random_direction_in_bounds(head, max_x, max_y)
     dir_to_previous = DIRECTIONS[DIRECTIONS.index(next_dir) - 2]
+    
+    count = 0
     while head not in active_positions:
-        # print(head)
-        # print(active_positions)
+        neighbors = []
+        count += 1
+        # if count >= 1000:
+        #     print(head)
+        #     print(active_positions)
         dir_to_previous = DIRECTIONS[DIRECTIONS.index(next_dir) - 2]
-        while next_dir == dir_to_previous or add_offset(head, next_dir)[0] not in range(0, max_x + 1) or add_offset(head, next_dir)[1] not in range(0, max_y + 1):
-            # print("bad")
-            next_dir = random_direction_in_bounds(head, max_x, max_y)
+        for i in DIRECTIONS:
+            if i != dir_to_previous and add_offset(head, i)[0] in range(1, max_x + 1) and add_offset(head, i)[1] in range(0, max_y + 1):
+                neighbors.append(i)
+        # print(head)
+        # print(neighbors)
+        next_dir = random.choice(neighbors)
+
+        # while add_offset(head, next_dir)[0] not in range(0, max_x + 1) or add_offset(head, next_dir)[1] not in range(0, max_y + 1):
+        #     next_dir = DIRECTIONS[random.randint(0, 3)]
         path_raster[head[0]][head[1]] = next_dir
+        if add_offset(head, next_dir) in active_positions:
+            return path_raster
         head = add_offset(head, next_dir)
     # print("a")
     
@@ -52,7 +65,7 @@ def new_maze(width: int, height: int) -> list:
 
     ABo_head = list(active_cells)[0]
 
-    while len(active_cells) < int((width * height) * 0.44 - 0.5):
+    while len(active_cells) < int((width * height) * 0.33):
         next_dir = random_direction_in_bounds(ABo_head, width -1, height -1)
         if add_offset(ABo_head, next_dir) in active_cells:
             ABo_head = add_offset(ABo_head, next_dir)
@@ -61,6 +74,7 @@ def new_maze(width: int, height: int) -> list:
             ABo_head = add_offset(ABo_head, next_dir)
             raster_maze[ABo_head[0]][ABo_head[1]] &= WALL_BREAK_MASKS[DIRECTIONS.index((next_dir)) - 2]
         active_cells.add(ABo_head)
+
 
     while len(active_cells) < width * height:
         start_pos = random_inactive_position(width - 1, height -1, active_cells)
