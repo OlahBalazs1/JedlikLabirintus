@@ -101,29 +101,9 @@ def draw_maze(maze: list) -> None:
         i = i.replace(END*3, END_FANCY)
         print(i)
 
-def pick_end(maze, start_pos) -> tuple:
-    visited_squares = set()
-    next_squares = [start_pos]
-    furthest_ends = []
 
-    while len(visited_squares) < (len(maze) * len(maze[0])): 
-        furthest_ends = []
-        visitable_neighbours = []
+maze,player_pos,end_path = new_maze(5,5)
+print(end_path)
 
-        for square in next_squares:
-            if maze[square[0]][square[1]] in WALL_BREAK_MASKS:
-                furthest_ends.append(square)
-                
-            for (index, i) in enumerate(WALL_CHECK_MASKS):
-                if maze[square[0]][square[1]] & 0b1111 & i == 0 and add_offset(square, DIRECTIONS[index]) not in visited_squares:
-                    visitable_neighbours.append(add_offset(square, DIRECTIONS[index]))
-            visited_squares.add(square)
-
-        next_squares = []
-        for i in visitable_neighbours:
-            next_squares.append(i)
-
-    return random.choice(furthest_ends)
-
-maze = new_maze(20,20)
 draw_maze(maze)
+

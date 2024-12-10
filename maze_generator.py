@@ -6,6 +6,8 @@ WALL_BREAK_MASKS = [0b1110, 0b1101, 0b1011, 0b0111]
 WALL_CHECK_MASKS = [~a for a in WALL_BREAK_MASKS]
 
 def add_offset(position, vector) -> tuple:
+    # print("p", position[0])
+    # print("v", vector[0])
     return position[0] + vector[0], position[1] + vector[1]
 
 def random_direction_in_bounds(current_pos: tuple, max_x: int, max_y: int) -> tuple:
@@ -20,7 +22,7 @@ def new_loop(start_pos: tuple, active_positions: set, max_x: int, max_y: int) ->
     path_raster = [[(0, 0) for _ in range(max_y + 1)] for _ in range(max_x + 1)]
     head = start_pos
     next_dir = random_direction_in_bounds(head, max_x, max_y)
-    # dir_to_previous = DIRECTIONS[DIRECTIONS.index(next_dir) - 2]
+    dir_to_previous = DIRECTIONS[DIRECTIONS.index(next_dir) - 2]
     
     while head not in active_positions:
         neighbors = []
@@ -49,7 +51,7 @@ def random_inactive_position(max_x: int, max_y: int, active_positions: set) -> t
 
 def pick_end(maze, start_pos) -> tuple:
     visited_squares = set()
-    next_squares = [start_pos]
+    next_squares = [[start_pos]]
     furthest_ends = []
 
     while len(visited_squares) < (len(maze) * len(maze[0])): 
@@ -57,13 +59,13 @@ def pick_end(maze, start_pos) -> tuple:
         visitable_neighbours = []
 
         for square in next_squares:
-            if maze[square[0]][square[1]] in WALL_BREAK_MASKS:
+            if maze[square[-1][0]][square[-1][1]] in WALL_BREAK_MASKS:
                 furthest_ends.append(square)
                 
             for (index, i) in enumerate(WALL_CHECK_MASKS):
-                if maze[square[0]][square[1]] & 0b1111 & i == 0 and add_offset(square, DIRECTIONS[index]) not in visited_squares:
-                    visitable_neighbours.append(add_offset(square, DIRECTIONS[index]))
-            visited_squares.add(square)
+                if maze[square[-1][0]][square[-1][1]] & 0b1111 & i == 0 and add_offset(square[-1], DIRECTIONS[index]) not in visited_squares:
+                    visitable_neighbours.append(square + [add_offset(square[-1], DIRECTIONS[index])])
+            visited_squares.add(square[-1])
 
         next_squares = []
         for i in visitable_neighbours:
@@ -76,13 +78,13 @@ def pick_end(maze, start_pos) -> tuple:
 # https://weblog.jamisbuck.org/2011/1/20/maze-generation-wilson-s-algorithm
 # https://weblog.jamisbuck.org/2011/1/17/maze-generation-aldous-broder-algorithm
 # https://en.wikipedia.org/wiki/Maze_generation_algorithm
-def new_maze(width: int, height: int) -> list:
+def new_maze(width: int, height: int) -> tuple:
     active_cells = {(random.randint(0, width - 1), 0)}
     raster_maze = [[0b1111 for _ in range(height)] for _ in range(width)]
 
     ABo_head = list(active_cells)[0]
 
-    while len(active_cells) < int((width * height) * 0.33):
+    while len(active_cells) < int((width * height) * 0.33 + 0.5):
         next_dir = random_direction_in_bounds(ABo_head, width -1, height -1)
         if add_offset(ABo_head, next_dir) in active_cells:
             ABo_head = add_offset(ABo_head, next_dir)
@@ -94,10 +96,7 @@ def new_maze(width: int, height: int) -> list:
 
 
     while len(active_cells) < width * height:
-        # start_pos = (4,1)
-        # start_pos = random_inactive_position(width - 1, height -1, active_cells)
         head = random_inactive_position(width - 1, height -1, active_cells)
-        # head = (4, 4)
         path_raster = new_loop(head, active_cells, width -1, height -1, )
         last_dir = (0,0)
         head_dir = (-1, -1)
@@ -113,9 +112,11 @@ def new_maze(width: int, height: int) -> list:
                 last_dir = head_dir
 
             raster_maze[head[0]][head[1]] &= WALL_BREAK_MASKS[DIRECTIONS.index(last_dir) - 2]
+
     player_pos = random.choice([(0, 0), (0,height -1),(width -1,0),(width -1,height-1,)])
     raster_maze[player_pos[0]][player_pos[1]] |= 0b10000
-    end_pos = pick_end(raster_maze, player_pos)
+    end_path = pick_end(raster_maze, player_pos)
+    end_pos = end_path[-1]
     raster_maze[end_pos[0]][end_pos[1]] |= 0b100000
 
-    return raster_maze
+    return raster_maze,player_pos,end_path
