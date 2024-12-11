@@ -1,6 +1,14 @@
+from sys import exception
 from maze_generator import DIRECTIONS, WALL_BREAK_MASKS, WALL_CHECK_MASKS, add_offset, new_maze
+from pynput import keyboard
 import random
 import os
+
+LEFT = [keyboard.Key.left, keyboard.KeyCode.from_char("a"), keyboard.KeyCode.from_char("h")]
+RIGHT= [keyboard.Key.right, keyboard.KeyCode.from_char("d"), keyboard.KeyCode.from_char("l")]
+DOWN = [keyboard.Key.down, keyboard.KeyCode.from_char("s"), keyboard.KeyCode.from_char("j")]
+UP = [keyboard.Key.up, keyboard.KeyCode.from_char("w"), keyboard.KeyCode.from_char("k")]
+GIVE_UP = [keyboard.Key.esc]
 
 CLEAR_COMMAND = "clear"
 if os.name == "nt":
@@ -12,6 +20,7 @@ PLAYER_FANCY="\033[92mOwO\033[0m"
 END="e"
 END_FANCY="\033[103m   \033[0m"
 def create_wall(cell: int) -> list: 
+    # print(bin(cell))
     wall = [[ 0 for _ in range(3)] for _ in range(3)]
     if cell & 0b10000 != 0:
         wall[1][1] = 0b10000
@@ -52,8 +61,6 @@ def num_to_wall(input: int) -> str:
     return WALLS[input]
 
 def draw_maze(maze: list) -> None:
-    # maze[player_pos[1]][player_pos[0]] |= 0b10000
-    # maze[end_pos[0]][end_pos[1]] |= 0b100000
     maze_lines = []
     for y in maze:
         line = [[], [], []]
@@ -101,9 +108,61 @@ def draw_maze(maze: list) -> None:
         i = i.replace(END*3, END_FANCY)
         print(i)
 
-
-maze,player_pos,end_path = new_maze(5,5)
-print(end_path)
-
+# os.system(CLEAR_COMMAND)
+maze, player_pos, end_path = new_maze(20,20)
 draw_maze(maze)
+# print(bin(maze[player_pos[0]][player_pos[1]]))
+# print(maze[player_pos[0]][player_pos[1]])
+# print(player_pos)
+
+def make_move(maze, player_pos, move) -> tuple:
+    DIRECTIONS = [(-1, 0), (0, -1), (1, 0), (0, 1)]
+    try: 
+        if maze[player_pos[0]][player_pos[1]] & 0b1111 & WALL_CHECK_MASKS[DIRECTIONS.index(move)] != 0:
+            return maze, player_pos
+    except: 
+        return maze, player_pos
+
+    maze[player_pos[0]][player_pos[1]] ^= 0b010000
+    player_pos = add_offset(player_pos, move)
+    maze[player_pos[0]][player_pos[1]] |= 0b010000
+
+    return maze, player_pos
+
+
+
+def on_press(key):
+    global maze
+    global player_pos
+    global end_path
+    possible_directions = []
+    for index, i in enumerate(DIRECTIONS):
+        if maze[player_pos[0]][player_pos[1]] & 0b1111 & WALL_CHECK_MASKS[index] == 0:
+            possible_directions.append(i)
+    move = (0,0)
+    if key in LEFT:
+        move = DIRECTIONS[1]
+    elif key in RIGHT:
+        move = DIRECTIONS[3]
+    elif key in DOWN:
+        move = DIRECTIONS[2]
+    elif key in UP:
+        move = DIRECTIONS[0]
+    elif key in GIVE_UP:
+        pass
+        # listener.stop()
+    else:
+        # pass
+        listener.stop()
+
+
+    os.system(CLEAR_COMMAND)
+    maze, player_pos = make_move(maze, player_pos, move)
+    draw_maze(maze)
+    
+
+with keyboard.Listener(
+        on_press=on_press,
+        ) as listener:
+    listener.join()
 

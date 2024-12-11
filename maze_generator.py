@@ -1,6 +1,6 @@
 import random
 
-# left, down, right, up
+# up, left, down, right
 DIRECTIONS = [(-1, 0), (0, -1), (1, 0), (0, 1)]
 WALL_BREAK_MASKS = [0b1110, 0b1101, 0b1011, 0b0111]
 WALL_CHECK_MASKS = [~a for a in WALL_BREAK_MASKS]
@@ -14,7 +14,7 @@ def random_direction_in_bounds(current_pos: tuple, max_x: int, max_y: int) -> tu
     valid_ones = []
     for i in DIRECTIONS:
         if add_offset(i, current_pos)[0] in range(0, max_x + 1) and add_offset(i, current_pos)[1] in range(0, max_y + 1):
-            valid_ones.append(i)
+           valid_ones.append(i)
 
     return random.choice(valid_ones)
 
@@ -119,4 +119,7 @@ def new_maze(width: int, height: int) -> tuple:
     end_pos = end_path[-1]
     raster_maze[end_pos[0]][end_pos[1]] |= 0b100000
 
+
     return raster_maze,player_pos,end_path
+
+
