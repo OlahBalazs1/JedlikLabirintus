@@ -15,17 +15,31 @@ if os.name == "nt":
     os.system('color')
     CLEAR_COMMAND = "cls"
 
+os.system(CLEAR_COMMAND)
+maze, player_pos, end_path = new_maze(5,5)
+path_taken = set()
+
+
 PLAYER="p"
 PLAYER_FANCY="\033[92mOwO\033[0m"
 END="e"
 END_FANCY="\033[103m   \033[0m"
+WIN="w"
+WIN_FANCY="\033[30m\033[103mOWO\033[0m"
+
+PLAYER_PATH_PLACEHOLDER = "P"
+PLAYER_PATH = "\33[31m●\33[0m"
+
+WIN_PATH_PLACEHOLDER = "Q"
+WIN_PATH = "\33[93m●\33[0m"
+
+game_ended = False
 def create_wall(cell: int) -> list: 
-    # print(bin(cell))
     wall = [[ 0 for _ in range(3)] for _ in range(3)]
     if cell & 0b10000 != 0:
-        wall[1][1] = 0b10000
+        wall[1][1] |= 0b10000
     if cell & 0b100000 != 0:
-        wall[1][1] = 0b100000
+        wall[1][1] |= 0b100000
     for index, mask in enumerate(WALL_CHECK_MASKS):
         if cell & 0b001111 & mask != 0:
             match index:
@@ -53,6 +67,8 @@ def create_wall(cell: int) -> list:
     return wall
 
 def num_to_wall(input: int) -> str:
+    if input == 0b110000:
+        return WIN
     if input == 0b10000:
         return PLAYER
     if input == 0b100000:
@@ -60,7 +76,16 @@ def num_to_wall(input: int) -> str:
     WALLS = [" ","╸", "╻", "┓", "╺", "━", "┏", "┳", "╹", "┛", "┃", "┫", "┗", "┻", "┣", "╋"]
     return WALLS[input]
 
-def draw_maze(maze: list) -> None:
+def replace_at(input: str, index: int, to: str) -> str:
+    input_list = list(input)
+    input_list[index] = to
+    return "".join(input_list)
+
+
+def draw_maze(maze: list, is_over) -> None:
+    global player_pos
+    global end_path
+    global path_taken
     maze_lines = []
     for y in maze:
         line = [[], [], []]
@@ -100,20 +125,23 @@ def draw_maze(maze: list) -> None:
 
     for line in maze_lines:
         completed_maze.append("".join(map(num_to_wall, line)))
-    # print(completed_maze)
 
-    for index, i in enumerate(completed_maze):
+    if is_over:
+        for i in path_taken:
+            completed_maze[i[0] * 2 + 1] = replace_at(completed_maze[i[0]* 2 + 1], i[1] * 3 + 2 + i[1], PLAYER_PATH_PLACEHOLDER)
+        for i in end_path[:-1]:
+            completed_maze[i[0] * 2 + 1] = replace_at(completed_maze[i[0] * 2 + 1], i[1] * 3 + 2 + i[1], WIN_PATH_PLACEHOLDER)
 
+    for i in completed_maze:
         i = i.replace(PLAYER*3, PLAYER_FANCY)
         i = i.replace(END*3, END_FANCY)
+        i = i.replace(WIN*3, WIN_FANCY)
+        i = i.replace(PLAYER_PATH_PLACEHOLDER, PLAYER_PATH)
+        i = i.replace(WIN_PATH_PLACEHOLDER, WIN_PATH)
+        
         print(i)
+draw_maze(maze, False)
 
-# os.system(CLEAR_COMMAND)
-maze, player_pos, end_path = new_maze(20,20)
-draw_maze(maze)
-# print(bin(maze[player_pos[0]][player_pos[1]]))
-# print(maze[player_pos[0]][player_pos[1]])
-# print(player_pos)
 
 def make_move(maze, player_pos, move) -> tuple:
     DIRECTIONS = [(-1, 0), (0, -1), (1, 0), (0, 1)]
@@ -123,7 +151,8 @@ def make_move(maze, player_pos, move) -> tuple:
     except: 
         return maze, player_pos
 
-    maze[player_pos[0]][player_pos[1]] ^= 0b010000
+    path_taken.add(player_pos)
+    maze[player_pos[0]][player_pos[1]] &= ~0b010000
     player_pos = add_offset(player_pos, move)
     maze[player_pos[0]][player_pos[1]] |= 0b010000
 
@@ -149,16 +178,15 @@ def on_press(key):
     elif key in UP:
         move = DIRECTIONS[0]
     elif key in GIVE_UP:
-        pass
-        # listener.stop()
-    else:
-        # pass
         listener.stop()
-
-
+        os.system(CLEAR_COMMAND)
+        draw_maze(maze, True)
+        return
     os.system(CLEAR_COMMAND)
     maze, player_pos = make_move(maze, player_pos, move)
-    draw_maze(maze)
+    if maze[player_pos[0]][player_pos[1]] & 0b110000 == 0b110000:
+        print("won")
+    draw_maze(maze, False)
     
 
 with keyboard.Listener(

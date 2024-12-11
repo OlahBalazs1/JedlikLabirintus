@@ -116,8 +116,7 @@ def new_maze(width: int, height: int) -> tuple:
     player_pos = random.choice([(0, 0), (0,height -1),(width -1,0),(width -1,height-1,)])
     raster_maze[player_pos[0]][player_pos[1]] |= 0b10000
     end_path = pick_end(raster_maze, player_pos)
-    end_pos = end_path[-1]
-    raster_maze[end_pos[0]][end_pos[1]] |= 0b100000
+    raster_maze[end_path[-1][0]][end_path[-1][1]] |= 0b100000
 
 
     return raster_maze,player_pos,end_path
