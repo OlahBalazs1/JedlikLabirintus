@@ -20,7 +20,7 @@ if os.name == "nt":
     CLEAR_COMMAND = "cls"
 
 print("Jedlik labirintus")
-print("Készítette: ")
+print("Készítette: Oláh Balázs")
 print("Irányítások:")
 print("\tEscape: feladás")
 print("\tMozgás: ")
