@@ -1,7 +1,11 @@
-from sys import exception
-from maze_generator import DIRECTIONS, WALL_BREAK_MASKS, WALL_CHECK_MASKS, add_offset, new_maze
-from pynput import keyboard
-import random
+from maze_generator import DIRECTIONS, WALL_CHECK_MASKS, add_offset, new_maze
+try:
+    from pynput import keyboard
+except:
+    print("A pynput library nem megtalálható.")
+    print("Kérem, futtassa az alábbi programot: ")
+    print("\tpython -m pip install pynput")
+    exit()
 import os
 
 LEFT = [keyboard.Key.left, keyboard.KeyCode.from_char("a"), keyboard.KeyCode.from_char("h")]
@@ -15,10 +19,32 @@ if os.name == "nt":
     os.system('color')
     CLEAR_COMMAND = "cls"
 
-os.system(CLEAR_COMMAND)
-maze, player_pos, end_path = new_maze(5,5)
-path_taken = set()
+print("Jedlik labirintus")
+print("Készítette: ")
+print("Irányítások:")
+print("\tEscape: feladás")
+print("\tMozgás: ")
+print("\t\tW, K, és felfele nyíl")
+print("\t\tS, J, és lefele nyíl")
+print("\t\tA, H és balra nyíl")
+print("\t\tD, L és jobbra nyíl")
+height = 1
+width = 1
+while height <= 1:
+    try: 
+        height = int(input("\nAdja meg a kívánt magasságot (min 2): "))
+    except:
+        pass
 
+while width <= 1:
+    try:
+        width = int(input("Adja meg a kívánt szélességet (min 2): "))
+    except:
+        pass
+
+os.system(CLEAR_COMMAND)
+maze, player_pos, end_path = new_maze(height,width)
+path_taken = set()
 
 PLAYER="p"
 PLAYER_FANCY="\033[92mOwO\033[0m"
@@ -159,7 +185,6 @@ def make_move(maze, player_pos, move) -> tuple:
     return maze, player_pos
 
 
-
 def on_press(key):
     global maze
     global player_pos
@@ -180,12 +205,19 @@ def on_press(key):
     elif key in GIVE_UP:
         listener.stop()
         os.system(CLEAR_COMMAND)
+        maze[player_pos[0]][player_pos[1]] ^= 0b010000
+        path_taken.add(player_pos)
         draw_maze(maze, True)
+        print("\33[31mFeladtad.\033[0m")
         return
     os.system(CLEAR_COMMAND)
     maze, player_pos = make_move(maze, player_pos, move)
     if maze[player_pos[0]][player_pos[1]] & 0b110000 == 0b110000:
-        print("won")
+        listener.stop()
+        draw_maze(maze, True)
+        print("\033[92mNyertél!\033[0m")
+        return
+
     draw_maze(maze, False)
     
 
@@ -193,4 +225,3 @@ with keyboard.Listener(
         on_press=on_press,
         ) as listener:
     listener.join()
-

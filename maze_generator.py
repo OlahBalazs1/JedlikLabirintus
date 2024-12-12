@@ -113,9 +113,21 @@ def new_maze(width: int, height: int) -> tuple:
 
             raster_maze[head[0]][head[1]] &= WALL_BREAK_MASKS[DIRECTIONS.index(last_dir) - 2]
 
-    player_pos = random.choice([(0, 0), (0,height -1),(width -1,0),(width -1,height-1,)])
+    possible_player_positions = (0, 0), (0,height -1),(width -1,0),(width -1,height-1)
+    paths = []
+    path_lens = []
+
+    for i in possible_player_positions:
+        paths.append(pick_end(raster_maze, i))
+        path_lens.append(len(paths[-1]))
+    
+    end_path = paths[path_lens.index(max(path_lens))]
+    player_pos = possible_player_positions[path_lens.index(max(path_lens))]
+
+
+    # player_pos = random.choice([(0, 0), (0,height -1),(width -1,0),(width -1,height-1,)])
     raster_maze[player_pos[0]][player_pos[1]] |= 0b10000
-    end_path = pick_end(raster_maze, player_pos)
+    # end_path = pick_end(raster_maze, player_pos)
     raster_maze[end_path[-1][0]][end_path[-1][1]] |= 0b100000
 
 
