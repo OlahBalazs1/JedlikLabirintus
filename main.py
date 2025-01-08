@@ -15,36 +15,30 @@ UP = [keyboard.Key.up, keyboard.KeyCode.from_char("w"), keyboard.KeyCode.from_ch
 GIVE_UP = [keyboard.Key.esc]
 
 CLEAR_COMMAND = "clear"
+PYNPUT_ERROR = "A pynput modul jelenleg nem működik linux alapú rendszereken, ha a python verziója 3.13 feletti.\nVagy használjon a Pythonból egy régebbi verziót, vagy váltson Windows alapú rendszerre."
 if os.name == "nt":
     os.system('color')
     CLEAR_COMMAND = "cls"
+    PYNPUT_ERROR = "A pynput modul jelenleg nem működik, ha a Python verziója 3.13 felett van.\nHasználjon egy régebbi verziót."
 
-print("Jedlik labirintus")
-print("Készítette: Oláh Balázs")
-print("Irányítások:")
-print("\tEscape: feladás")
-print("\tMozgás: ")
-print("\t\tW, K, és felfele nyíl")
-print("\t\tS, J, és lefele nyíl")
-print("\t\tA, H és balra nyíl")
-print("\t\tD, L és jobbra nyíl")
-height = 1
-width = 1
-while height <= 1:
-    try: 
-        height = int(input("\nAdja meg a kívánt magasságot (min 2): "))
-    except:
-        pass
 
-while width <= 1:
-    try:
-        width = int(input("Adja meg a kívánt szélességet (min 2): "))
-    except:
-        pass
+# height = 1
+# width = 1
+# while height <= 1:
+    # try: 
+        # height = int(input("\nAdja meg a kívánt magasságot (min 2): "))
+    # except:
+        # pass
 
-os.system(CLEAR_COMMAND)
-maze, player_pos, end_path = new_maze(height,width)
-path_taken = set()
+# while width <= 1:
+    # try:
+        # width = int(input("Adja meg a kívánt szélességet (min 2): "))
+    # except:
+        # pass
+
+# os.system(CLEAR_COMMAND)
+# maze, player_pos, end_path = new_maze(height,width)
+# path_taken = set()
 
 PLAYER="p"
 PLAYER_FANCY="\033[92mOwO\033[0m"
@@ -108,7 +102,7 @@ def replace_at(input: str, index: int, to: str) -> str:
     return "".join(input_list)
 
 
-def draw_maze(maze: list, is_over) -> None:
+def draw_maze(maze: list, is_over: bool) -> list[str]:
     global player_pos
     global end_path
     global path_taken
@@ -158,16 +152,35 @@ def draw_maze(maze: list, is_over) -> None:
         for i in end_path[:-1]:
             completed_maze[i[0] * 2 + 1] = replace_at(completed_maze[i[0] * 2 + 1], i[1] * 3 + 2 + i[1], WIN_PATH_PLACEHOLDER)
 
-    for i in completed_maze:
+    for index, i in enumerate(completed_maze):
         i = i.replace(PLAYER*3, PLAYER_FANCY)
         i = i.replace(END*3, END_FANCY)
         i = i.replace(WIN*3, WIN_FANCY)
         i = i.replace(PLAYER_PATH_PLACEHOLDER, PLAYER_PATH)
         i = i.replace(WIN_PATH_PLACEHOLDER, WIN_PATH)
-        
-        print(i)
-draw_maze(maze, False)
+        completed_maze[index] = i
+    return completed_maze
 
+def draw_size_choose(width, height) -> None:
+    map = [[15 for _ in range(width)] for _ in range(height)]
+    map = draw_maze(map, False)
+    map += [] + ["←" + "".join(["─" for _ in range(width * 4)]) + "→"]
+    map[0] += "  ↑"
+    for i in range(1, (height*2)):
+        map[i] += "  │"
+    map[-2] += "  ↓"
+
+    for i in map:
+        print(i)
+
+
+IS_CHOOSING_SIZE = False
+IS_CHOOSING_STYLE = False
+IS_PLAYING = False
+
+#
+# for i in draw_maze(maze, False):
+#     print(i)
 
 def make_move(maze, player_pos, move) -> tuple:
     DIRECTIONS = [(-1, 0), (0, -1), (1, 0), (0, 1)]
@@ -185,43 +198,96 @@ def make_move(maze, player_pos, move) -> tuple:
     return maze, player_pos
 
 
+# TODO ne lehessen nagyobb a terminálnál
+width = 5
+height = 5
 def on_press(key):
-    global maze
-    global player_pos
-    global end_path
-    possible_directions = []
-    for index, i in enumerate(DIRECTIONS):
-        if maze[player_pos[0]][player_pos[1]] & 0b1111 & WALL_CHECK_MASKS[index] == 0:
-            possible_directions.append(i)
-    move = (0,0)
-    if key in LEFT:
-        move = DIRECTIONS[1]
-    elif key in RIGHT:
-        move = DIRECTIONS[3]
-    elif key in DOWN:
-        move = DIRECTIONS[2]
-    elif key in UP:
-        move = DIRECTIONS[0]
-    elif key in GIVE_UP:
-        listener.stop()
+    global IS_PLAYING
+    global IS_CHOOSING_SIZE
+    global IS_CHOOSING_STYLE
+    if IS_PLAYING:
+        global maze
+        global player_pos
+        global end_path
+        possible_directions = []
+        for index, i in enumerate(DIRECTIONS):
+            if maze[player_pos[0]][player_pos[1]] & 0b1111 & WALL_CHECK_MASKS[index] == 0:
+                possible_directions.append(i)
+        move = (0,0)
+        if key in LEFT:
+            move = DIRECTIONS[1]
+        elif key in RIGHT:
+            move = DIRECTIONS[3]
+        elif key in DOWN:
+            move = DIRECTIONS[2]
+        elif key in UP:
+            move = DIRECTIONS[0]
+        elif key in GIVE_UP:
+            listener.stop()
+            os.system(CLEAR_COMMAND)
+            maze[player_pos[0]][player_pos[1]] ^= 0b010000
+            path_taken.add(player_pos)
+            draw_maze(maze, True)
+            print("\33[31mFeladtad.\033[0m")
+            return
+        if move == (0,0):
+            return
         os.system(CLEAR_COMMAND)
-        maze[player_pos[0]][player_pos[1]] ^= 0b010000
-        path_taken.add(player_pos)
-        draw_maze(maze, True)
-        print("\33[31mFeladtad.\033[0m")
-        return
-    os.system(CLEAR_COMMAND)
-    maze, player_pos = make_move(maze, player_pos, move)
-    if maze[player_pos[0]][player_pos[1]] & 0b110000 == 0b110000:
-        listener.stop()
-        draw_maze(maze, True)
-        print("\033[92mNyertél!\033[0m")
-        return
+        maze, player_pos = make_move(maze, player_pos, move)
+        if maze[player_pos[0]][player_pos[1]] & 0b110000 == 0b110000:
+            listener.stop()
+            draw_maze(maze, True)
+            print("\033[92mNyertél!\033[0m")
+            return
 
-    draw_maze(maze, False)
+        draw_maze(maze, False)
+    elif IS_CHOOSING_SIZE:
+        global width
+        global height
+        if key in LEFT:
+            width = max(width - 1, 2)
+        elif key in RIGHT:
+            # TODO terminál mérete, villogástalanítás
+            width = min(width + 1, 214332)
+        elif key in DOWN:
+            # TODO terminál mérete, villogástalanítás
+            height = min(height + 1, 32543)
+        elif key in UP:
+            height = max(height - 1, 2)
+        elif key in GIVE_UP:
+            print("Viszlát!")
+            listener.stop()
+        elif key == keyboard.Key.enter:
+            IS_CHOOSING_SIZE = False
+            IS_CHOOSING_STYLE = True
+            return
+        os.system(CLEAR_COMMAND)
+        draw_size_choose(width, height)
+        
+    elif IS_CHOOSING_STYLE:
+        pass
+    else:
+        print("Jedlik labirintus")
+        print("Készítette: Oláh Balázs")
+        print("Irányítások:")
+        print("\tEscape: feladás / kilépés")
+        print("\tMozgás: ")
+        print("\t\tW, K, és felfele nyíl")
+        print("\t\tS, J, és lefele nyíl")
+        print("\t\tA, H és balra nyíl")
+        print("\t\tD, L és jobbra nyíl")
+        input("Nyomjon ENTER-t, hogy továbblépjen")
+        IS_CHOOSING_SIZE = True
+
+
+
     
 
-with keyboard.Listener(
-        on_press=on_press,
-        ) as listener:
-    listener.join()
+try:
+    with keyboard.Listener(
+            on_press=on_press,
+            ) as listener:
+        listener.join()
+except:
+    print(PYNPUT_ERROR)
+    exit()
