@@ -1,4 +1,5 @@
 import random
+import time
 
 # up, left, down, right
 DIRECTIONS = [(-1, 0), (0, -1), (1, 0), (0, 1)]
@@ -49,7 +50,7 @@ def random_inactive_position(max_x: int, max_y: int, active_positions: set) -> t
         rand_y = random.randint(0, max_y)
     return (rand_x, rand_y)
 
-def pick_end(maze, start_pos) -> tuple:
+def pick_end(maze, start_pos) -> list[list[int]]:
     visited_squares = set()
     next_squares = [[start_pos]]
     furthest_ends = []
@@ -78,13 +79,13 @@ def pick_end(maze, start_pos) -> tuple:
 # https://weblog.jamisbuck.org/2011/1/20/maze-generation-wilson-s-algorithm
 # https://weblog.jamisbuck.org/2011/1/17/maze-generation-aldous-broder-algorithm
 # https://en.wikipedia.org/wiki/Maze_generation_algorithm
-def new_maze(width: int, height: int) -> tuple:
+def new_UST(width: int, height: int) -> tuple:
     active_cells = {(random.randint(0, width - 1), 0)}
     raster_maze = [[0b1111 for _ in range(height)] for _ in range(width)]
 
     ABo_head = list(active_cells)[0]
 
-    while len(active_cells) < int((width * height) * 0.33 + 0.5):
+    while len(active_cells) < int((width * height) * 1 + 0.5):
         next_dir = random_direction_in_bounds(ABo_head, width -1, height -1)
         if add_offset(ABo_head, next_dir) in active_cells:
             ABo_head = add_offset(ABo_head, next_dir)
@@ -113,24 +114,62 @@ def new_maze(width: int, height: int) -> tuple:
 
             raster_maze[head[0]][head[1]] &= WALL_BREAK_MASKS[DIRECTIONS.index(last_dir) - 2]
 
+
+
+    return raster_maze
+
+
+def new_long_hall(width: int, height: int) -> list[list[int]]:
+    active_cells =set() 
+    raster_maze = [[0b1111 for _ in range(height)] for _ in range(width)]
+    head = (0, 0)
+    previous_direction = (0,0)
+    turns = []
+    
+    while len(active_cells) < width * height:
+        next_dir = (0,0)
+        possible_directions = []
+        for i in DIRECTIONS:
+            neighbor = add_offset(head, i)
+            if neighbor not in active_cells and neighbor[0] in range(0, width) and neighbor[1] in range(0, height):
+                possible_directions.append(i)
+        if len(possible_directions) == 0:
+            if head == turns[-1]:
+                del turns[-1]
+            active_cells.add(head)
+            head = turns[-1]
+            previous_direction = (0,0)
+            continue
+
+        if random.randint(1, 100) % 3 != 0 and previous_direction in possible_directions:
+            next_dir = previous_direction
+        else:
+            next_dir = random.choice(possible_directions)
+            turns.append(head)
+
+        raster_maze[head[0]][head[1]] &= WALL_BREAK_MASKS[DIRECTIONS.index(next_dir)]
+        active_cells.add(head)
+        head = add_offset(head, next_dir)
+        previous_direction = next_dir
+        raster_maze[head[0]][head[1]] &= WALL_BREAK_MASKS[DIRECTIONS.index(previous_direction) - 2]
+        
+    return raster_maze
+            
+
+def pick_start_and_end(maze: list[list[int]]) -> tuple:
+    width, height = len(maze), len(maze[0])
     possible_player_positions = (0, 0), (0,height -1),(width -1,0),(width -1,height-1)
     paths = []
     path_lens = []
 
     for i in possible_player_positions:
-        paths.append(pick_end(raster_maze, i))
+        paths.append(pick_end(maze, i))
         path_lens.append(len(paths[-1]))
     
     end_path = paths[path_lens.index(max(path_lens))]
     player_pos = possible_player_positions[path_lens.index(max(path_lens))]
 
+    maze[player_pos[0]][player_pos[1]] |= 0b10000
+    maze[end_path[-1][0]][end_path[-1][1]] |= 0b100000
 
-    # player_pos = random.choice([(0, 0), (0,height -1),(width -1,0),(width -1,height-1,)])
-    raster_maze[player_pos[0]][player_pos[1]] |= 0b10000
-    # end_path = pick_end(raster_maze, player_pos)
-    raster_maze[end_path[-1][0]][end_path[-1][1]] |= 0b100000
-
-
-    return raster_maze,player_pos,end_path
-
-
+    return player_pos, end_path[-1]

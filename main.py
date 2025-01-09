@@ -1,4 +1,4 @@
-from maze_generator import DIRECTIONS, WALL_CHECK_MASKS, add_offset, new_maze
+from maze_generator import *
 try:
     from pynput import keyboard
 except:
@@ -22,23 +22,16 @@ if os.name == "nt":
     PYNPUT_ERROR = "A pynput modul jelenleg nem működik, ha a Python verziója 3.13 felett van.\nHasználjon egy régebbi verziót."
 
 
-# height = 1
-# width = 1
-# while height <= 1:
-    # try: 
-        # height = int(input("\nAdja meg a kívánt magasságot (min 2): "))
-    # except:
-        # pass
-
-# while width <= 1:
-    # try:
-        # width = int(input("Adja meg a kívánt szélességet (min 2): "))
-    # except:
-        # pass
-
-# os.system(CLEAR_COMMAND)
-# maze, player_pos, end_path = new_maze(height,width)
-# path_taken = set()
+print("Jedlik labirintus")
+print("Készítette: Oláh Balázs")
+print("Irányítások:")
+print("\tEscape: feladás / kilépés")
+print("\tMozgás: ")
+print("\t\tW, K, és felfele nyíl")
+print("\t\tS, J, és lefele nyíl")
+print("\t\tA, H és balra nyíl")
+print("\t\tD, L és jobbra nyíl")
+print("Nyomjon meg egy gombot a folytatáshoz.")
 
 PLAYER="p"
 PLAYER_FANCY="\033[92mOwO\033[0m"
@@ -174,9 +167,12 @@ def draw_size_choose(width, height) -> None:
         print(i)
 
 
-IS_CHOOSING_SIZE = False
 IS_CHOOSING_STYLE = False
 IS_PLAYING = False
+IS_CHOOSING_SIZE = False
+
+TERM_SIZE = os.get_terminal_size()
+TERM_WIDTH, TERM_HEIGHT = TERM_SIZE.columns, TERM_SIZE.lines
 
 #
 # for i in draw_maze(maze, False):
@@ -245,15 +241,27 @@ def on_press(key):
         global width
         global height
         if key in LEFT:
-            width = max(width - 1, 2)
+            if width - 1 >= 2:
+                width = width - 1
+            else:
+                return
         elif key in RIGHT:
             # TODO terminál mérete, villogástalanítás
-            width = min(width + 1, 214332)
+            if width * 4 + 4 < TERM_WIDTH:
+                width = width + 1
+            else:
+                return
         elif key in DOWN:
             # TODO terminál mérete, villogástalanítás
-            height = min(height + 1, 32543)
+            if height + 2 + 4 < TERM_HEIGHT:
+                height = height + 1
+            else:
+                return
         elif key in UP:
-            height = max(height - 1, 2)
+            if height - 1 >= 2:
+                height = height - 1
+            else:
+                return
         elif key in GIVE_UP:
             print("Viszlát!")
             listener.stop()
@@ -263,31 +271,20 @@ def on_press(key):
             return
         os.system(CLEAR_COMMAND)
         draw_size_choose(width, height)
-        
     elif IS_CHOOSING_STYLE:
         pass
     else:
-        print("Jedlik labirintus")
-        print("Készítette: Oláh Balázs")
-        print("Irányítások:")
-        print("\tEscape: feladás / kilépés")
-        print("\tMozgás: ")
-        print("\t\tW, K, és felfele nyíl")
-        print("\t\tS, J, és lefele nyíl")
-        print("\t\tA, H és balra nyíl")
-        print("\t\tD, L és jobbra nyíl")
-        input("Nyomjon ENTER-t, hogy továbblépjen")
         IS_CHOOSING_SIZE = True
 
 
+for i in draw_maze(new_long_hall(2,2), False):
+    print(i)
 
-    
-
-try:
-    with keyboard.Listener(
-            on_press=on_press,
-            ) as listener:
-        listener.join()
-except:
-    print(PYNPUT_ERROR)
-    exit()
+#try:
+    #with keyboard.Listener(
+            #on_press=on_press,
+            #) as listener:
+        #listener.join()
+#except:
+    #print(PYNPUT_ERROR)
+    #exit()
