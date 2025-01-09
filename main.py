@@ -21,6 +21,9 @@ IS_CHOOSING_SIZE = False
 path_taken = set() 
 end_path = []
 
+TERM_SIZE = os.get_terminal_size()
+TERM_WIDTH, TERM_HEIGHT = TERM_SIZE.columns, TERM_SIZE.lines
+
 CLEAR_COMMAND = "clear"
 PYNPUT_ERROR = "A pynput modul jelenleg nem működik linux alapú rendszereken, ha a python verziója 3.13 feletti.\nVagy használjon a Pythonból egy régebbi verziót, vagy váltson Windows alapú rendszerre."
 if os.name == "nt":
@@ -161,14 +164,21 @@ def draw_maze(maze: list, is_over: bool) -> list[str]:
         completed_maze[index] = i
     return completed_maze
 
+def center_maze(maze: list[str]) -> list[str]:
+    spaces = "".join([" " for _ in range((TERM_WIDTH - len(maze[0])) // 2)])
+    for index, i in enumerate(maze):
+        maze[index] = spaces + i
+    return maze
+
 def draw_size_choose(width, height) -> None:
-    map = [[15 for _ in range(width)] for _ in range(height)]
-    map = draw_maze(map, False)
-    map += [] + ["←" + "".join(["─" for _ in range(width * 4)]) + "→"]
-    map[0] += "  ↑"
+    map = draw_maze([[15 for _ in range(width)] for _ in range(height)], False)
+    map_width = len(map[0])
+    map = center_maze(map)
+    map += ["".join([" " for _ in range((TERM_WIDTH - map_width) // 2)]) + "←" + "".join(["─" for _ in range(width * 4)]) + "→"]
+    map[0] += " ↑"
     for i in range(1, (height*2)):
-        map[i] += "  │"
-    map[-2] += "  ↓"
+        map[i] += " │"
+    map[-2] += " ↓"
 
     for i in map:
         print(i)
@@ -180,14 +190,12 @@ def draw_style_choose(map: list[list[int]], current_choice: int) -> None:
     if current_choice != -1:
         style_copy[current_choice] = highlight(style_copy[current_choice])
     
-    for i in draw_maze(map, False):
+    for i in center_maze(draw_maze(map, False)):
         print(i)
     spaces = "".join([" " for _ in range(TERM_WIDTH - len(styles[0]) - len(styles[1]) - 2)])
     print(style_copy[0], spaces, style_copy[1])
 
 
-TERM_SIZE = os.get_terminal_size()
-TERM_WIDTH, TERM_HEIGHT = TERM_SIZE.columns, TERM_SIZE.lines
 
 def make_move(maze, player_pos, move) -> tuple:
     DIRECTIONS = [(-1, 0), (0, -1), (1, 0), (0, 1)]
@@ -221,6 +229,8 @@ def on_press(key):
     global TERM_HEIGHT
     global TERM_WIDTH
     global end_path
+    TERM_SIZE = os.get_terminal_size()
+    TERM_WIDTH, TERM_HEIGHT = TERM_SIZE.columns, TERM_SIZE.lines
     if IS_PLAYING:
         global player_pos
         global end_path
@@ -242,7 +252,7 @@ def on_press(key):
             os.system(CLEAR_COMMAND)
             maze[player_pos[0]][player_pos[1]] ^= 0b010000
             path_taken.add(player_pos)
-            for i in draw_maze(maze, True):
+            for i in center_maze(draw_maze(maze, True)):
                 print(i)
             print("\33[31mFeladtad.\033[0m")
             return
@@ -254,17 +264,15 @@ def on_press(key):
         maze, player_pos = make_move(maze, player_pos, move)
         if maze[player_pos[0]][player_pos[1]] & 0b110000 == 0b110000:
             listener.stop()
-            for i in draw_maze(maze, True):
+            for i in center_maze(draw_maze(maze, True)):
                 print(i)
             print("\033[92mNyertél!\033[0m")
             return
 
-        for i in draw_maze(maze, False):
+        for i in center_maze(draw_maze(maze, False)):
             print(i)
 
     elif IS_CHOOSING_SIZE:
-        TERM_SIZE = os.get_terminal_size()
-        TERM_WIDTH, TERM_HEIGHT = TERM_SIZE.columns, TERM_SIZE.lines
         if height * 2 + 4 < TERM_HEIGHT:
             height = height
         else:
@@ -316,7 +324,7 @@ def on_press(key):
                 return
             maze, player_pos, end_path = pick_start_and_end(maze)
             os.system(CLEAR_COMMAND)
-            for i in draw_maze(maze, False):
+            for i in center_maze(draw_maze(maze, False)):
                 print(i)
             IS_CHOOSING_STYLE = False
             IS_PLAYING = True
