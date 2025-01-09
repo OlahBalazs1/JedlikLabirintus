@@ -18,7 +18,7 @@ GIVE_UP = [keyboard.Key.esc]
 IS_CHOOSING_STYLE = False
 IS_PLAYING = False
 IS_CHOOSING_SIZE = False
-path_taken =set() 
+path_taken = set() 
 end_path = []
 
 CLEAR_COMMAND = "clear"
