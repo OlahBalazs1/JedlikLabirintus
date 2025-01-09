@@ -7,12 +7,19 @@ except:
     print("\tpython -m pip install pynput")
     exit()
 import os
+from copy import deepcopy
 
 LEFT = [keyboard.Key.left, keyboard.KeyCode.from_char("a"), keyboard.KeyCode.from_char("h")]
 RIGHT= [keyboard.Key.right, keyboard.KeyCode.from_char("d"), keyboard.KeyCode.from_char("l")]
 DOWN = [keyboard.Key.down, keyboard.KeyCode.from_char("s"), keyboard.KeyCode.from_char("j")]
 UP = [keyboard.Key.up, keyboard.KeyCode.from_char("w"), keyboard.KeyCode.from_char("k")]
 GIVE_UP = [keyboard.Key.esc]
+
+IS_CHOOSING_STYLE = False
+IS_PLAYING = False
+IS_CHOOSING_SIZE = False
+path_taken =set() 
+end_path = []
 
 CLEAR_COMMAND = "clear"
 PYNPUT_ERROR = "A pynput modul jelenleg nem működik linux alapú rendszereken, ha a python verziója 3.13 feletti.\nVagy használjon a Pythonból egy régebbi verziót, vagy váltson Windows alapú rendszerre."
@@ -165,18 +172,22 @@ def draw_size_choose(width, height) -> None:
 
     for i in map:
         print(i)
+styles = ["Hosszú folyosók ←", "→ Random"]
 
+def draw_style_choose(map: list[list[int]], current_choice: int) -> None:
+    highlight = lambda i: f"\33[42m\33[30m{i}\33[0m"
+    style_copy = deepcopy(styles)
+    if current_choice != -1:
+        style_copy[current_choice] = highlight(style_copy[current_choice])
+    
+    for i in draw_maze(map, False):
+        print(i)
+    spaces = "".join([" " for _ in range(TERM_WIDTH - len(styles[0]) - len(styles[1]) - 2)])
+    print(style_copy[0], spaces, style_copy[1])
 
-IS_CHOOSING_STYLE = False
-IS_PLAYING = False
-IS_CHOOSING_SIZE = False
 
 TERM_SIZE = os.get_terminal_size()
 TERM_WIDTH, TERM_HEIGHT = TERM_SIZE.columns, TERM_SIZE.lines
-
-#
-# for i in draw_maze(maze, False):
-#     print(i)
 
 def make_move(maze, player_pos, move) -> tuple:
     DIRECTIONS = [(-1, 0), (0, -1), (1, 0), (0, 1)]
@@ -194,15 +205,23 @@ def make_move(maze, player_pos, move) -> tuple:
     return maze, player_pos
 
 
-# TODO ne lehessen nagyobb a terminálnál
 width = 5
 height = 5
+style_gens = [new_long_hall, new_UST]
+chosen_style = -1
 def on_press(key):
+    global maze
     global IS_PLAYING
     global IS_CHOOSING_SIZE
     global IS_CHOOSING_STYLE
+    global chosen_style
+    global width
+    global height
+    global TERM_SIZE
+    global TERM_HEIGHT
+    global TERM_WIDTH
+    global end_path
     if IS_PLAYING:
-        global maze
         global player_pos
         global end_path
         possible_directions = []
@@ -223,37 +242,50 @@ def on_press(key):
             os.system(CLEAR_COMMAND)
             maze[player_pos[0]][player_pos[1]] ^= 0b010000
             path_taken.add(player_pos)
-            draw_maze(maze, True)
+            for i in draw_maze(maze, True):
+                print(i)
             print("\33[31mFeladtad.\033[0m")
             return
         if move == (0,0):
+            return
+        if move not in possible_directions:
             return
         os.system(CLEAR_COMMAND)
         maze, player_pos = make_move(maze, player_pos, move)
         if maze[player_pos[0]][player_pos[1]] & 0b110000 == 0b110000:
             listener.stop()
-            draw_maze(maze, True)
+            for i in draw_maze(maze, True):
+                print(i)
             print("\033[92mNyertél!\033[0m")
             return
 
-        draw_maze(maze, False)
+        for i in draw_maze(maze, False):
+            print(i)
+
     elif IS_CHOOSING_SIZE:
-        global width
-        global height
+        TERM_SIZE = os.get_terminal_size()
+        TERM_WIDTH, TERM_HEIGHT = TERM_SIZE.columns, TERM_SIZE.lines
+        if height * 2 + 4 < TERM_HEIGHT:
+            height = height
+        else:
+            height = int((TERM_HEIGHT - 4) / 2)
+        if width * 4 + 7 < TERM_WIDTH:
+            width = width
+        else:
+            width = int((TERM_WIDTH - 5) / 4) 
+
         if key in LEFT:
             if width - 1 >= 2:
                 width = width - 1
             else:
                 return
         elif key in RIGHT:
-            # TODO terminál mérete, villogástalanítás
-            if width * 4 + 4 < TERM_WIDTH:
+            if width * 4 + 7 < TERM_WIDTH:
                 width = width + 1
             else:
                 return
         elif key in DOWN:
-            # TODO terminál mérete, villogástalanítás
-            if height + 2 + 4 < TERM_HEIGHT:
+            if height * 2 + 4 < TERM_HEIGHT:
                 height = height + 1
             else:
                 return
@@ -268,23 +300,46 @@ def on_press(key):
         elif key == keyboard.Key.enter:
             IS_CHOOSING_SIZE = False
             IS_CHOOSING_STYLE = True
+            maze = [[15 for _ in range(width)] for _ in range(height)]
+            os.system(CLEAR_COMMAND)
+            draw_style_choose(maze, chosen_style)
             return
         os.system(CLEAR_COMMAND)
         draw_size_choose(width, height)
     elif IS_CHOOSING_STYLE:
-        pass
+        if key in LEFT:
+            chosen_style = 0
+        elif key in RIGHT:
+            chosen_style = 1
+        elif key == keyboard.Key.enter:
+            if chosen_style == -1:
+                return
+            maze, player_pos, end_path = pick_start_and_end(maze)
+            os.system(CLEAR_COMMAND)
+            for i in draw_maze(maze, False):
+                print(i)
+            IS_CHOOSING_STYLE = False
+            IS_PLAYING = True
+            return
+        elif key in GIVE_UP:
+            print("Viszlát!")
+            listener.stop()
+        else:
+            return
+        maze = style_gens[chosen_style](height, width)
+        os.system(CLEAR_COMMAND)
+        draw_style_choose(maze, chosen_style)
+
     else:
+        os.system(CLEAR_COMMAND)
+        draw_size_choose(width, height)
         IS_CHOOSING_SIZE = True
 
-
-for i in draw_maze(new_long_hall(2,2), False):
-    print(i)
-
-#try:
-    #with keyboard.Listener(
-            #on_press=on_press,
-            #) as listener:
-        #listener.join()
-#except:
-    #print(PYNPUT_ERROR)
-    #exit()
+try:
+    with keyboard.Listener(
+            on_press=on_press,
+            ) as listener:
+        listener.join()
+except TypeError:
+    print(PYNPUT_ERROR)
+    exit()

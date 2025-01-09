@@ -141,7 +141,7 @@ def new_long_hall(width: int, height: int) -> list[list[int]]:
             previous_direction = (0,0)
             continue
 
-        if random.randint(1, 100) % 3 != 0 and previous_direction in possible_directions:
+        if random.randint(1, 100) % 2 != 0 and previous_direction in possible_directions:
             next_dir = previous_direction
         else:
             next_dir = random.choice(possible_directions)
@@ -172,4 +172,4 @@ def pick_start_and_end(maze: list[list[int]]) -> tuple:
     maze[player_pos[0]][player_pos[1]] |= 0b10000
     maze[end_path[-1][0]][end_path[-1][1]] |= 0b100000
 
-    return player_pos, end_path[-1]
+    return maze, player_pos, end_path
